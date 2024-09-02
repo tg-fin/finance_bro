@@ -7,14 +7,19 @@ from phi.utils.log import logger
 
 from assistants import get_invstment_research_assistant  # type: ignore
 
+import os
+
 nest_asyncio.apply()
 st.set_page_config(
-    page_title="Investment Researcher",
-    page_icon=":orange_heart:",
+    page_title="Financial Analyst",
+    page_icon=":blue_heart:",
 )
-st.title("Investment Researcher")
-st.markdown("##### :orange_heart: Built using [phidata](https://github.com/phidatahq/phidata)")
+st.title("Finance BRO from Goldman Sachs")
+st.markdown("##### Powered by Llama 3.1 on GROQ: Built by [HUBRIS](https://hubris.at)")
 
+# Add this at the top of the file, after imports
+if 'GROQ_API_KEY' not in st.session_state:
+    st.session_state['GROQ_API_KEY'] = ''
 
 def restart_assistant():
     logger.debug("---*--- Restarting Assistant ---*---")
@@ -23,10 +28,28 @@ def restart_assistant():
 
 
 def main() -> None:
+
+     # Add API key input in the sidebar
+    st.sidebar.markdown("## 🔑 GROQ API Key")
+    api_key_input = st.sidebar.text_input(
+        "Enter your Groq API key",
+        type="password",
+        key="groq_api_key_input",
+    )
+    confirm_key = st.button("Confirm API Key")
+
+    if not api_key_input:
+        st.warning("Please enter your Groq API Key in the sidebar and click 'Confirm API Key' to continue.")
+        return
+
+
+    # Update session state with API key
+    st.session_state['GROQ_API_KEY'] = api_key_input
+
     # Get LLM Model
     model = (
-        st.sidebar.selectbox("Select LLM", options=["llama3-70b-8192", "llama3-8b-8192", "mixtral-8x7b-32768"])
-        or "llama3-70b-8192"
+        st.sidebar.selectbox("Select LLM", options=["llama-3.1-70b-versatile","llama-3.1-8b-instant","llama3-70b-8192", "llama3-8b-8192", "mixtral-8x7b-32768"])
+        or "llama-3.1-70b-versatile"
     )
     # Set llm in session state
     if "model" not in st.session_state:
@@ -39,29 +62,46 @@ def main() -> None:
     # Get the assistant
     research_assistant: Assistant
     if "research_assistant" not in st.session_state or st.session_state["research_assistant"] is None:
-        research_assistant = get_invstment_research_assistant(model=model)
-        st.session_state["research_assistant"] = research_assistant
+        try:
+            research_assistant = get_invstment_research_assistant(
+                model=model,
+                api_key=api_key_input
+            )
+            st.session_state["research_assistant"] = research_assistant
+        except ValueError as e:
+            logger.error(f"Error creating assistant: {str(e)}")
+            st.error(f"Error creating assistant: {str(e)}")
+            st.error("Please check your API key and ensure you have an active internet connection.")
+            return
+        except Exception as e:
+            logger.error(f"Unexpected error: {str(e)}")
+            st.error(f"Unexpected error: {str(e)}")
+            return
     else:
         research_assistant = st.session_state["research_assistant"]
 
+    if research_assistant is None:
+        st.error("Research assistant is not initialized. Please check your API key and try again.")
+        return
+
     # Get ticker for report
     ticker_to_research = st.sidebar.text_input(
-        ":female-scientist: Enter a ticker to research",
+        "📈 Input a stock TICKER to research",
         value="NVDA",
     )
 
     # Checkboxes for research options
-    st.sidebar.markdown("## Research Options")
-    get_company_info = st.sidebar.checkbox("Company Info", value=True)
-    get_company_news = st.sidebar.checkbox("Company News", value=True)
-    get_analyst_recommendations = st.sidebar.checkbox("Analyst Recommendations", value=True)
-    get_upgrades_downgrades = st.sidebar.checkbox("Upgrades/Downgrades", value=True)
+    st.sidebar.markdown("## 🔍 Research Options")
+    get_company_info = st.sidebar.checkbox("📊 Company Info", value=True)
+    get_company_news = st.sidebar.checkbox("📰 Company News", value=True)
+    get_analyst_recommendations = st.sidebar.checkbox("👨‍💼 Analyst Recommendations", value=True)
+    get_upgrades_downgrades = st.sidebar.checkbox("⬆️⬇️ Upgrades/Downgrades", value=True)
 
     # Ticker object
     ticker = yf.Ticker(ticker_to_research)
 
     # -*- Generate Research Report
-    generate_report = st.sidebar.button("Generate Report")
+    generate_report = st.sidebar.button("📝 Generate Report")
     if generate_report:
         report_input = ""
 
@@ -178,13 +218,17 @@ def main() -> None:
             final_report_container = st.empty()
             report_message = f"Please generate a report about: {ticker_to_research}\n\n\n"
             report_message += report_input
-            for delta in research_assistant.run(report_message):
-                final_report += delta  # type: ignore
-                final_report_container.markdown(final_report)
+            try:
+                for delta in research_assistant.run(report_message):
+                    final_report += delta  # type: ignore
+                    final_report_container.markdown(final_report)
+            except Exception as e:
+                st.error(f"Error generating report: {str(e)}")   
+            
 
     st.sidebar.markdown("---")
     if st.sidebar.button("New Run"):
         restart_assistant()
 
-
-main()
+if __name__ == "__main__":
+    main()
