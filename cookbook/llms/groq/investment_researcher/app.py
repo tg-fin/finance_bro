@@ -36,7 +36,7 @@ def main() -> None:
         type="password",
         key="groq_api_key_input",
     )
-    confirm_key = st.button("Confirm API Key")
+    confirm_key = st.sidebar.button("Confirm API Key")
 
     if not api_key_input:
         st.warning("Please enter your Groq API Key in the sidebar and click 'Confirm API Key' to continue.")
