@@ -72,6 +72,8 @@ def get_invstment_research_assistant(
             ### [Recommendation]
             {provide a recommendation on the stock along with a thorough reasoning}
 
+            DISCLAIMER: The information provided by this app is for informational purposes only and does not constitute financial or investment advice. Always conduct your own research or consult a qualified financial advisor before making investment decisions. We are not responsible for any actions taken based on the output of this app.
+            
             Report generated on: {Month Date, Year (hh:mm AM/PM)}
             </report_format>
             """
