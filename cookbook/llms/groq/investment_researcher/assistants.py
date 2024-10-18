@@ -5,7 +5,7 @@ from phi.llm.groq import Groq
 from phi.utils.log import logger
 
 def get_invstment_research_assistant(
-    model: str = "llama-3.1-70b-versatile",
+    model: str = "llama-3.2-90b-text-preview",
     api_key: str="",
     debug_mode: bool = True,
 ) -> Assistant:
